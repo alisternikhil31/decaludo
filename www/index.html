@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>DecaLudo: Grand Arena</title>
+  <style>
+    :root {
+      --bg: #090b10;
+      --card-bg: rgba(18, 22, 34, 0.85);
+      --border-color: rgba(255, 255, 255, 0.1);
+      --text-main: #f0f4fc;
+      --text-dim: #94a3b8;
+      --gold: #f59e0b;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    body {
+      background: radial-gradient(circle at center, #141b2d 0%, var(--bg) 100%);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow-x: hidden;
+      touch-action: manipulation;
+    }
+    header {
+      width: 100%;
+      max-width: 900px;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border-color);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand h1 {
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      background: linear-gradient(135deg, #f59e0b, #ec4899, #38bdf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .badge {
+      font-size: 0.65rem;
+      background: rgba(245, 158, 11, 0.2);
+      color: var(--gold);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      padding: 2px 6px;
+      border-radius: 999px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .hud-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn {
+      background: var(--card-bg);
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .btn:active {
+      transform: scale(0.96);
+    }
+    .btn.active {
+      border-color: #38bdf8;
+      background: rgba(56, 189, 248, 0.2);
+      color: #38bdf8;
+    }
+    main {
+      width: 100%;
+      max-width: 900px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 10px;
+      gap: 12px;
+    }
+    .arena-container {
+      position: relative;
+      width: 100%;
+      max-width: 540px;
+      aspect-ratio: 1 / 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      filter: drop-shadow(0 15px 30px rgba(0, 0, 0, 0.7));
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+    .action-bar {
+      width: 100%;
+      max-width: 540px;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 12px 16px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 14px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+    .current-turn-indicator {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .turn-swatch {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 2px solid #fff;
+      box-shadow: 0 0 10px currentColor;
+    }
+    .turn-details {
+      display: flex;
+      flex-direction: column;
+    }
+    .turn-name {
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+    .turn-status {
+      font-size: 0.72rem;
+      color: var(--text-dim);
+    }
+    .dice-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .dice-btn {
+      width: 54px;
+      height: 54px;
+      border-radius: 12px;
+      background: linear-gradient(145deg, #1f293d, #111827);
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      font-size: 1.8rem;
+      font-weight: 900;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+      transition: transform 0.15s, border-color 0.2s;
+    }
+    .dice-btn:active {
+      transform: scale(0.92);
+    }
+    .dice-btn.rolling {
+      animation: shake 0.4s infinite;
+      border-color: var(--gold);
+    }
+    @keyframes shake {
+      0% { transform: rotate(0deg) scale(1); }
+      25% { transform: rotate(-8deg) scale(1.05); }
+      50% { transform: rotate(8deg) scale(1.05); }
+      75% { transform: rotate(-5deg) scale(1); }
+      100% { transform: rotate(0deg) scale(1); }
+    }
+    .scoreboard {
+      width: 100%;
+      max-width: 540px;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+    }
+    .score-chip {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 8px;
+      padding: 6px 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      font-size: 0.7rem;
+      transition: all 0.2s;
+    }
+    .score-chip.active {
+      border-color: currentColor;
+      background: rgba(255, 255, 255, 0.08);
+      transform: translateY(-2px);
+    }
+    .chip-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+    .chip-name {
+      font-weight: 600;
+      font-size: 0.68rem;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow: hidden;
+      max-width: 100%;
+    }
+    .chip-tokens {
+      display: flex;
+      gap: 2px;
+    }
+    .token-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+    }
+    .token-dot.home {
+      background: var(--gold);
+      box-shadow: 0 0 4px var(--gold);
+    }
+    .rules-banner {
+      width: 100%;
+      max-width: 540px;
+      background: rgba(245, 158, 11, 0.08);
+      border: 1px dashed rgba(245, 158, 11, 0.3);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 0.72rem;
+      color: #fcd34d;
+      line-height: 1.4;
+      text-align: center;
+    }
+    #log {
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      font-style: italic;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <h1>DECALUDO</h1>
+      <span class="badge">10 Players</span>
+    </div>
+    <div class="hud-controls">
+      <button class="btn" id="soundToggle">🔊 Sound</button>
+      <button class="btn" id="speedToggle">⚡ 1x</button>
+      <button class="btn" id="autoToggle">🤖 Bots</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="arena-container">
+      <canvas id="board" width="1080" height="1080"></canvas>
+    </div>
+
+    <div class="action-bar">
+      <div class="current-turn-indicator">
+        <div class="turn-swatch" id="turnSwatch"></div>
+        <div class="turn-details">
+          <span class="turn-name" id="turnName">Player 1</span>
+          <span class="turn-status" id="turnStatus">Roll the dice</span>
+        </div>
+      </div>
+      <div class="dice-container">
+        <button class="dice-btn" id="diceBtn">🎲</button>
+      </div>
+      <div>
+        <button class="btn" id="restartBtn">↺ Reset</button>
+      </div>
+    </div>
+
+    <div class="scoreboard" id="scoreboard"></div>
+    <div class="rules-banner">
+      ⚡ <b>Anti-Boredom Rules:</b> Roll <b>5 or 6</b> to deploy • Central <b>Nexus Portals</b> jump +15 spaces • Rolling 6 or capturing a token grants an instant <b>Bonus Roll</b>!
+    </div>
+    <div id="log">Game started. Tap the dice to begin!</div>
+  </main>
+
+  <script>
+    const AudioEngine = {
+      ctx: null,
+      enabled: true,
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) this.ctx = new AudioContext();
+        }
+      },
+      play(type) {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx || this.ctx.state !== 'running') {
+          if (this.ctx) this.ctx.resume();
+        }
+        try {
+          const t = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          if (type === 'roll') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(150, t);
+            osc.frequency.exponentialRampToValueAtTime(600, t + 0.1);
+            gain.gain.setValueAtTime(0.2, t);
+            gain.gain.linearRampToValueAtTime(0, t + 0.12);
+            osc.start(t);
+            osc.stop(t + 0.12);
+          } else if (type === 'step') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(440, t);
+            gain.gain.setValueAtTime(0.15, t);
+            gain.gain.linearRampToValueAtTime(0, t + 0.08);
+            osc.start(t);
+            osc.stop(t + 0.08);
+          } else if (type === 'portal') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(300, t);
+            osc.frequency.exponentialRampToValueAtTime(1200, t + 0.3);
+            gain.gain.setValueAtTime(0.3, t);
+            gain.gain.linearRampToValueAtTime(0, t + 0.35);
+            osc.start(t);
+            osc.stop(t + 0.35);
+          } else if (type === 'capture') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(500, t);
+            osc.frequency.linearRampToValueAtTime(150, t + 0.25);
+            gain.gain.setValueAtTime(0.3, t);
+            gain.gain.linearRampToValueAtTime(0, t + 0.25);
+            osc.start(t);
+            osc.stop(t + 0.25);
+          } else if (type === 'home') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(523.25, t);
+            osc.frequency.setValueAtTime(659.25, t + 0.1);
+            osc.frequency.setValueAtTime(783.99, t + 0.2);
+            gain.gain.setValueAtTime(0.25, t);
+            gain.gain.linearRampToValueAtTime(0, t + 0.35);
+            osc.start(t);
+            osc.stop(t + 0.35);
+          }
+        } catch(e) {}
+      }
+    };
+
+    const PLAYERS = [
+      { id: 0, name: 'Teal', hex: '#0ea5e9', light: '#7dd3fc', tokens: 3 },
+      { id: 1, name: 'Amethyst', hex: '#8b5cf6', light: '#c4b5fd', tokens: 3 },
+      { id: 2, name: 'Terracotta', hex: '#ea580c', light: '#fdba74', tokens: 3 },
+      { id: 3, name: 'Cobalt', hex: '#2563eb', light: '#93c5fd', tokens: 3 },
+      { id: 4, name: 'Gold', hex: '#eab308', light: '#fde047', tokens: 3 },
+      { id: 5, name: 'Emerald', hex: '#10b981', light: '#6ee7b7', tokens: 3 },
+      { id: 6, name: 'Mauve', hex: '#d946ef', light: '#f0abfc', tokens: 3 },
+      { id: 7, name: 'Amber', hex: '#f97316', light: '#fed7aa', tokens: 3 },
+      { id: 8, name: 'Iris', hex: '#6366f1', light: '#a5b4fc', tokens: 3 },
+      { id: 9, name: 'Obsidian', hex: '#64748b', light: '#cbd5e1', tokens: 3 }
+    ];
+
+    const TOTAL_TRACK = 60;
+    const HOME_STRETCH = 4;
+    const PORTALS = [5, 17, 29, 41, 53];
+
+    let state = {
+      tokens: [],
+      currentPlayer: 0,
+      diceVal: null,
+      isRolling: false,
+      waitingMove: false,
+      speed: 1,
+      botMode: true,
+      sound: true
+    };
+
+    function initTokens() {
+      state.tokens = [];
+      PLAYERS.forEach(p => {
+        for (let i = 0; i < 3; i++) {
+          state.tokens.push({
+            playerId: p.id,
+            tokenId: i,
+            status: 'base',
+            pos: 0
+          });
+        }
+      });
+    }
+
+    const canvas = document.getElementById('board');
+    const ctx = canvas.getContext('2d');
+    const CENTER = 540;
+    const RADIUS = 480;
+
+    function getTrackPos(index) {
+      const angle = (index / TOTAL_TRACK) * Math.PI * 2 - Math.PI / 2;
+      const r = RADIUS * 0.72;
+      return {
+        x: CENTER + Math.cos(angle) * r,
+        y: CENTER + Math.sin(angle) * r
+      };
+    }
+
+    function getBasePos(playerId, tokenId) {
+      const baseAngle = (playerId / 10) * Math.PI * 2 - Math.PI / 2;
+      const r = RADIUS * 0.90;
+      const spread = (tokenId - 1) * 0.08;
+      return {
+        x: CENTER + Math.cos(baseAngle + spread) * r,
+        y: CENTER + Math.sin(baseAngle + spread) * r
+      };
+    }
+
+    function getHomeStretchPos(playerId, step) {
+      const angle = (playerId / 10) * Math.PI * 2 - Math.PI / 2;
+      const startR = RADIUS * 0.72;
+      const endR = RADIUS * 0.28;
+      const r = startR - (step / HOME_STRETCH) * (startR - endR);
+      return {
+        x: CENTER + Math.cos(angle) * r,
+        y: CENTER + Math.sin(angle) * r
+      };
+    }
+
+    function render() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const grad = ctx.createRadialGradient(CENTER, CENTER, 100, CENTER, CENTER, RADIUS);
+      grad.addColorStop(0, '#101524');
+      grad.addColorStop(1, '#090b10');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(CENTER, CENTER, RADIUS, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+      ctx.lineWidth = 4;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(CENTER, CENTER, RADIUS * 0.72, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+      ctx.lineWidth = 26;
+      ctx.stroke();
+
+      for (let i = 0; i < TOTAL_TRACK; i++) {
+        const pt = getTrackPos(i);
+        const ownerId = Math.floor(i / 6);
+        const isEntry = (i % 6 === 0);
+        const isPortal = PORTALS.includes(i);
+
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, isPortal ? 14 : 11, 0, Math.PI * 2);
+
+        if (isPortal) {
+          ctx.fillStyle = '#f59e0b';
+          ctx.shadowColor = '#f59e0b';
+          ctx.shadowBlur = 10;
+        } else if (isEntry) {
+          ctx.fillStyle = PLAYERS[ownerId].hex;
+          ctx.shadowColor = PLAYERS[ownerId].hex;
+          ctx.shadowBlur = 6;
+        } else {
+          ctx.fillStyle = '#1e2638';
+          ctx.shadowBlur = 0;
+        }
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        if (isPortal) {
+          ctx.fillStyle = '#000';
+          ctx.font = 'bold 12px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('★', pt.x, pt.y);
+        }
+      }
+
+      PLAYERS.forEach(p => {
+        for (let t = 0; t < 3; t++) {
+          const bp = getBasePos(p.id, t);
+          ctx.beginPath();
+          ctx.arc(bp.x, bp.y, 14, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(255,255,255,0.04)';
+          ctx.strokeStyle = p.hex;
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.fill();
+        }
+
+        for (let s = 1; s <= HOME_STRETCH; s++) {
+          const hp = getHomeStretchPos(p.id, s);
+          ctx.beginPath();
+          ctx.arc(hp.x, hp.y, 8, 0, Math.PI * 2);
+          ctx.fillStyle = p.hex;
+          ctx.globalAlpha = 0.4 + (s / HOME_STRETCH) * 0.5;
+          ctx.fill();
+          ctx.globalAlpha = 1.0;
+        }
+      });
+
+      ctx.beginPath();
+      ctx.arc(CENTER, CENTER, 55, 0, Math.PI * 2);
+      ctx.fillStyle = '#1e293b';
+      ctx.strokeStyle = 'var(--gold)';
+      ctx.lineWidth = 4;
+      ctx.stroke();
+      ctx.fill();
+      ctx.fillStyle = '#f59e0b';
+      ctx.font = 'bold 16px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('FINISH', CENTER, CENTER);
+
+      state.tokens.forEach(tok => {
+        let coords;
+        if (tok.status === 'base') coords = getBasePos(tok.playerId, tok.tokenId);
+        else if (tok.status === 'track') coords = getTrackPos(tok.pos);
+        else if (tok.status === 'home_stretch') coords = getHomeStretchPos(tok.playerId, tok.pos);
+        else if (tok.status === 'finished') coords = { x: CENTER, y: CENTER };
+
+        const p = PLAYERS[tok.playerId];
+        const isTurn = state.currentPlayer === tok.playerId && state.waitingMove;
+        const canMoveThis = isTurn && canTokenMove(tok, state.diceVal);
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(coords.x, coords.y, 12, 0, Math.PI * 2);
+        ctx.fillStyle = p.hex;
+        ctx.shadowColor = canMoveThis ? '#fff' : p.hex;
+        ctx.shadowBlur = canMoveThis ? 16 : 4;
+        ctx.fill();
+        ctx.strokeStyle = canMoveThis ? '#ffffff' : 'rgba(255,255,255,0.5)';
+        ctx.lineWidth = canMoveThis ? 3 : 1.5;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(coords.x, coords.y, 4, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+        ctx.restore();
+      });
+
+      updateScoreboardUI();
+    }
+
+    function canTokenMove(token, roll) {
+      if (!roll) return false;
+      if (token.status === 'finished') return false;
+      if (token.status === 'base') return (roll === 5 || roll === 6);
+      if (token.status === 'home_stretch') return (token.pos + roll <= HOME_STRETCH + 1);
+      return true;
+    }
+
+    function rollDice() {
+      if (state.isRolling || state.waitingMove) return;
+      AudioEngine.play('roll');
+      state.isRolling = true;
+      const diceEl = document.getElementById('diceBtn');
+      diceEl.classList.add('rolling');
+
+      let ticks = 0;
+      const rollInterval = setInterval(() => {
+        const temp = Math.floor(Math.random() * 6) + 1;
+        diceEl.innerText = temp;
+        ticks++;
+        if (ticks > 8) {
+          clearInterval(rollInterval);
+          state.diceVal = Math.floor(Math.random() * 6) + 1;
+          diceEl.innerText = state.diceVal;
+          diceEl.classList.remove('rolling');
+          state.isRolling = false;
+          handleRollResult();
+        }
+      }, 40 / state.speed);
+    }
+
+    function handleRollResult() {
+      const pTokens = state.tokens.filter(t => t.playerId === state.currentPlayer);
+      const validTokens = pTokens.filter(t => canTokenMove(t, state.diceVal));
+
+      if (validTokens.length === 0) {
+        log(`${PLAYERS[state.currentPlayer].name} rolled ${state.diceVal}. No moves possible.`);
+        setTimeout(nextTurn, 600 / state.speed);
+      } else if (validTokens.length === 1 && state.currentPlayer !== 0 && state.botMode) {
+        setTimeout(() => moveToken(validTokens[0]), 300 / state.speed);
+      } else if (state.currentPlayer !== 0 && state.botMode) {
+        setTimeout(() => {
+          let chosen = validTokens.find(t => t.status === 'base') || validTokens[0];
+          moveToken(chosen);
+        }, 400 / state.speed);
+      } else {
+        state.waitingMove = true;
+        document.getElementById('turnStatus').innerText = 'Select a glowing token to move';
+        render();
+      }
+    }
+
+    function moveToken(token) {
+      state.waitingMove = false;
+      let grantBonus = (state.diceVal === 6);
+
+      if (token.status === 'base') {
+        token.status = 'track';
+        token.pos = token.playerId * 6;
+        AudioEngine.play('step');
+        log(`${PLAYERS[token.playerId].name} deployed a token to track.`);
+      } else if (token.status === 'track') {
+        const startTile = token.playerId * 6;
+        let distTraveled = (token.pos >= startTile) ? (token.pos - startTile) : (TOTAL_TRACK - startTile + token.pos);
+
+        if (distTraveled + state.diceVal >= TOTAL_TRACK) {
+          token.status = 'home_stretch';
+          token.pos = (distTraveled + state.diceVal) - TOTAL_TRACK + 1;
+          AudioEngine.play('step');
+        } else {
+          token.pos = (token.pos + state.diceVal) % TOTAL_TRACK;
+          AudioEngine.play('step');
+
+          if (PORTALS.includes(token.pos)) {
+            token.pos = (token.pos + 15) % TOTAL_TRACK;
+            AudioEngine.play('portal');
+            log(`★ Nexus Portal! ${PLAYERS[token.playerId].name} warped +15 steps!`);
+          }
+
+          const victim = state.tokens.find(t => t.status === 'track' && t.pos === token.pos && t.playerId !== token.playerId);
+          if (victim) {
+            victim.status = 'base';
+            victim.pos = 0;
+            grantBonus = true;
+            AudioEngine.play('capture');
+            log(`⚔ Capture! ${PLAYERS[token.playerId].name} sent ${PLAYERS[victim.playerId].name} home!`);
+          }
+        }
+      } else if (token.status === 'home_stretch') {
+        token.pos += state.diceVal;
+        if (token.pos >= HOME_STRETCH + 1) {
+          token.status = 'finished';
+          AudioEngine.play('home');
+          log(`🏆 ${PLAYERS[token.playerId].name} token reached Home!`);
+        } else {
+          AudioEngine.play('step');
+        }
+      }
+
+      render();
+
+      const remaining = state.tokens.filter(t => t.playerId === token.playerId && t.status !== 'finished');
+      if (remaining.length === 0) {
+        log(`👑 ${PLAYERS[token.playerId].name} WINS THE GRAND ARENA!`);
+        alert(`👑 ${PLAYERS[token.playerId].name} WINS THE GRAND ARENA!`);
+        return;
+      }
+
+      if (grantBonus) {
+        log(`⚡ Bonus turn awarded to ${PLAYERS[state.currentPlayer].name}!`);
+        state.diceVal = null;
+        if (state.currentPlayer !== 0 && state.botMode) {
+          setTimeout(rollDice, 500 / state.speed);
+        } else {
+          document.getElementById('turnStatus').innerText = 'Bonus roll! Tap dice';
+        }
+      } else {
+        setTimeout(nextTurn, 400 / state.speed);
+      }
+    }
+
+    function nextTurn() {
+      state.waitingMove = false;
+      state.diceVal = null;
+      state.currentPlayer = (state.currentPlayer + 1) % 10;
+
+      const p = PLAYERS[state.currentPlayer];
+      document.getElementById('turnSwatch').style.background = p.hex;
+      document.getElementById('turnSwatch').style.color = p.hex;
+      document.getElementById('turnName').innerText = p.name;
+      document.getElementById('turnStatus').innerText = 'Roll the dice';
+
+      render();
+
+      if (state.currentPlayer !== 0 && state.botMode) {
+        setTimeout(rollDice, 300 / state.speed);
+      }
+    }
+
+    function log(msg) {
+      document.getElementById('log').innerText = msg;
+    }
+
+    function setupScoreboard() {
+      const board = document.getElementById('scoreboard');
+      board.innerHTML = '';
+      PLAYERS.forEach(p => {
+        const div = document.createElement('div');
+        div.className = `score-chip ${p.id === 0 ? 'active' : ''}`;
+        div.id = `chip-${p.id}`;
+        div.style.color = p.hex;
+        div.innerHTML = `
+          <div class="chip-dot" style="background:${p.hex}"></div>
+          <span class="chip-name">${p.name}</span>
+          <div class="chip-tokens" id="toks-${p.id}">
+            <div class="token-dot"></div>
+            <div class="token-dot"></div>
+            <div class="token-dot"></div>
+          </div>
+        `;
+        board.appendChild(div);
+      });
+    }
+
+    function updateScoreboardUI() {
+      PLAYERS.forEach(p => {
+        const chip = document.getElementById(`chip-${p.id}`);
+        if (chip) {
+          chip.classList.toggle('active', state.currentPlayer === p.id);
+          const dots = chip.querySelectorAll('.token-dot');
+          const pToks = state.tokens.filter(t => t.playerId === p.id);
+          pToks.forEach((t, idx) => {
+            if (dots[idx]) {
+              dots[idx].classList.toggle('home', t.status === 'finished');
+            }
+          });
+        }
+      });
+    }
+
+    canvas.addEventListener('click', (e) => {
+      if (!state.waitingMove) return;
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const clickX = (e.clientX - rect.left) * scaleX;
+      const clickY = (e.clientY - rect.top) * scaleY;
+
+      const activeToks = state.tokens.filter(t => t.playerId === state.currentPlayer && canTokenMove(t, state.diceVal));
+
+      for (let tok of activeToks) {
+        let pos;
+        if (tok.status === 'base') pos = getBasePos(tok.playerId, tok.tokenId);
+        else if (tok.status === 'track') pos = getTrackPos(tok.pos);
+        else if (tok.status === 'home_stretch') pos = getHomeStretchPos(tok.playerId, tok.pos);
+        else continue;
+
+        const dist = Math.hypot(pos.x - clickX, pos.y - clickY);
+        if (dist <= 30) {
+          moveToken(tok);
+          break;
+        }
+      }
+    });
+
+    document.getElementById('diceBtn').addEventListener('click', () => {
+      if (!state.isRolling && !state.waitingMove) {
+        rollDice();
+      }
+    });
+
+    document.getElementById('soundToggle').addEventListener('click', (e) => {
+      AudioEngine.enabled = !AudioEngine.enabled;
+      e.target.innerText = AudioEngine.enabled ? '🔊 Sound' : '🔇 Muted';
+      e.target.classList.toggle('active', AudioEngine.enabled);
+    });
+
+    document.getElementById('speedToggle').addEventListener('click', (e) => {
+      state.speed = state.speed === 1 ? 2 : state.speed === 2 ? 4 : 1;
+      e.target.innerText = `⚡ ${state.speed}x`;
+    });
+
+    document.getElementById('autoToggle').addEventListener('click', (e) => {
+      state.botMode = !state.botMode;
+      e.target.classList.toggle('active', state.botMode);
+      e.target.innerText = state.botMode ? '🤖 Bots' : '👥 Pass & Play';
+    });
+
+    document.getElementById('restartBtn').addEventListener('click', () => {
+      if (confirm('Restart match?')) {
+        initTokens();
+        state.currentPlayer = 0;
+        state.waitingMove = false;
+        state.diceVal = null;
+        render();
+      }
+    });
+
+    setupScoreboard();
+    initTokens();
+    render();
+  </script>
+</body>
+</html>
