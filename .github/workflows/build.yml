@@ -50,7 +50,7 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew bundleRelease \
-            -Pandroid.injected.signing.store.file=release.jks \
+            -Pandroid.injected.signing.store.file="$GITHUB_WORKSPACE/android/app/release.jks" \
             -Pandroid.injected.signing.store.password=DecaLudo2026SecureKey \
             -Pandroid.injected.signing.key.alias=decaludo \
             -Pandroid.injected.signing.key.password=DecaLudo2026SecureKey
